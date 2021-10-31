@@ -40,7 +40,7 @@ function Post({ props }) {
                     orderBy('timestamp', 'desc')
                 ),
                 snapshot => {
-                    setComments(snapshot.docs);
+                    if (snapshot) setComments(snapshot.docs);
                 })
         , [db, props.id]
     );
@@ -50,7 +50,7 @@ function Post({ props }) {
             onSnapshot(
                 collection(db, 'posts', props.id, 'likes'),
                 snapshot => {
-                    setLikes(snapshot.docs);
+                    if (snapshot) setLikes(snapshot.docs);
                 })
         , [db, props.id]
     );
