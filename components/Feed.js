@@ -11,7 +11,7 @@ function Feed() {
         <main className={`grid grid-cols-1 md:grid-cols-2 md:max-w-3xl lg:grid-cols-3 lg:max-w-5xl mx-auto ${!session && "!grid-cols-1 !max-w-3xl"}`}>
             {/* Section */}
             <section className="col-span-2">
-                <Stories />
+                {/* <Stories /> */}
                 <Posts />
             </section>
 

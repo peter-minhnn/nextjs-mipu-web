@@ -1,10 +1,9 @@
 // lib
 import Image from 'next/image'
 // icons
-import { HeartIcon, PaperAirplaneIcon, PlusCircleIcon, SearchIcon, UserGroupIcon } from '@heroicons/react/outline'
+import { AnnotationIcon, ChatIcon, PaperAirplaneIcon, PlusCircleIcon, SearchIcon, UserGroupIcon } from '@heroicons/react/outline'
 import { HomeIcon, MenuIcon } from '@heroicons/react/solid'
 // images
-import logoInstagram from '../public/assets/images/logo-inst.png'
 import mipuLogo from '../public/assets/images/mipu-logo.png'
 import iconLogoInstagram from '../public/assets/images/insta-logo-icon.png'
 import { signIn, useSession } from 'next-auth/react'
@@ -37,7 +36,7 @@ function Header() {
                 </div>
                 {/* Middle - Search input field */}
                 <div className="max-w-xs">
-                    <div className="relative mt-1 p-3 rounded-md">
+                    <div className="relative mt-1 p-3 rounded-md w-64 ml-20">
                         <div className="absolute inset-y-0 pl-3 flex items-center pointer-events-none">
                             <SearchIcon className="h-5 w-5 text-gray-500" />
                         </div>
@@ -50,13 +49,13 @@ function Header() {
                         <div className="flex items-center justify-end space-x-5">
                             <HomeIcon onClick={() => router.push('/')} className="nav-groups-button" />
                             <MenuIcon className="h-6 w-10 md:hidden cursor-pointer" />
-                            <div className="relative nav-groups-button">
-                                <PaperAirplaneIcon className="nav-groups-button" />
-                                <div className="absolute -top-2 -right-1 text-[0.85rem] w-5 h-5 bg-red-500 rounded-full flex justify-center animate-pulse text-white">3</div>
-                            </div>
+                            <ChatIcon className="nav-groups-button" />
                             <PlusCircleIcon onClick={() => setOpen(true)} className="nav-groups-button" />
                             <UserGroupIcon className="nav-groups-button" />
-                            <HeartIcon className="nav-groups-button" />
+                            <div className="relative nav-groups-button">
+                                <AnnotationIcon className="nav-groups-button" />
+                                <div className="absolute -top-2 -right-1 text-[0.85rem] w-5 h-5 bg-red-500 rounded-full flex justify-center animate-pulse text-white">3</div>
+                            </div>
 
                             <img
                                 src={session?.user?.image}
