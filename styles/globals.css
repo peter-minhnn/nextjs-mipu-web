@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .nav-groups-button {
+        @apply hidden h-7 w-7 md:inline-flex cursor-pointer transform hover:scale-125 transition-all duration-150 ease-out;
+    }
+    .post-btn {
+        @apply h-7 hover:scale-125 cursor-pointer transition-all duration-150 ease-out
+    }    
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    border-radius: 100vh;
+    border: 1px solid #000000;
+}
