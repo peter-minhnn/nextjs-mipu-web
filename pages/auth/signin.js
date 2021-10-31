@@ -1,4 +1,4 @@
-import { signIn as SignInoProvider, getProviders } from 'next-auth/react'
+import { signIn as SignInProvider, getProviders } from 'next-auth/react'
 import Header from '../../components/Header'
 
 function signIn({ providers }) {
@@ -13,7 +13,7 @@ function signIn({ providers }) {
                         <div key={provider.name}>
                             <button
                                 className="flex flex-row justify-center items-center p-2 w-full bg-white rounded-lg text-black border"
-                                onClick={() => SignInoProvider(provider.id, { callbackUrl: '/' })}>
+                                onClick={() => SignInProvider(provider.id, { callbackUrl: '/' })}>
                                 <img className="h-10 w-10 object-contain pr-2" src="https://developers.google.com/identity/images/g-logo.png" alt="google-signin-img"/>
                                 Sign in with {provider.name}
                             </button>
