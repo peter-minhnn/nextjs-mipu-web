@@ -16,7 +16,7 @@ function Posts() {
 
     return (
         <div>
-            {posts.map((post, i) => (
+            {posts.length > 0 && posts.map((post, i) => (
                 <Post
                     props={post.data()}
                     key={i}

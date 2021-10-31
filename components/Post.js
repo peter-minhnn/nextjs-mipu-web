@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-    DotsCircleHorizontalIcon,
+    DotsHorizontalIcon,
     HeartIcon,
     ChatIcon,
     PaperAirplaneIcon,
@@ -11,19 +11,21 @@ import {
     HeartIcon as HeartIconFilled
 } from '@heroicons/react/solid'
 import { useSession } from 'next-auth/react'
-import { 
-    addDoc, 
-    collection, 
-    deleteDoc, 
-    doc, 
-    onSnapshot, 
-    orderBy, 
-    query, 
-    serverTimestamp, 
-    setDoc 
+import {
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    onSnapshot,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc
 } from '@firebase/firestore'
 import Moment from 'react-moment'
 import { db } from '../firebase'
+import dynamic from 'next/dynamic'
+const Picker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 function Post({ props }) {
     const { data: session } = useSession();
@@ -31,35 +33,44 @@ function Post({ props }) {
     const [comments, setComments] = useState([]);
     const [likes, setLikes] = useState([]);
     const [hasLiked, setHasLiked] = useState(false);
-    
+    const [openEmoji, setOpenEmoji] = useState(false);
+    const [chosenEmoji, setChosenEmoji] = useState(null);
+    const commentRef = useRef(null);
+
     useEffect(
-        () =>
-            onSnapshot(
-                query(
-                    collection(db, 'posts', props.id, 'comments'),
-                    orderBy('timestamp', 'desc')
-                ),
-                snapshot => {
-                    if (snapshot) setComments(snapshot.docs);
-                })
+        () => {
+            if (props?.id) {
+                onSnapshot(
+                    query(
+                        collection(db, 'posts', props.id, 'comments'),
+                        orderBy('timestamp', 'desc')
+                    ),
+                    snapshot => {
+                        setComments(snapshot.docs);
+                    })
+            }
+        }
         , [db, props.id]
     );
 
     useEffect(
-        () =>
-            onSnapshot(
-                collection(db, 'posts', props.id, 'likes'),
-                snapshot => {
-                    if (snapshot) setLikes(snapshot.docs);
-                })
+        () => {
+            if (props?.id) {
+                onSnapshot(
+                    collection(db, 'posts', props.id, 'likes'),
+                    snapshot => {
+                        setLikes(snapshot.docs);
+                    })
+            }
+        }
         , [db, props.id]
     );
 
-    useEffect(() => 
-        setHasLiked(likes.findIndex(like => like.id === session.user.uid) !== -1), 
+    useEffect(() =>
+        setHasLiked(likes.findIndex(like => like.id === session?.user?.uid) !== -1),
         [likes]
     );
-    
+
     const likePost = async () => {
         if (hasLiked) {
             await deleteDoc(doc(db, 'posts', props.id, 'likes', session.user.uid));
@@ -85,6 +96,17 @@ function Post({ props }) {
         })
     }
 
+    const addEmoji = () => {
+        openEmoji ? setOpenEmoji(false) : setOpenEmoji(true);
+    }
+
+    const onEmojiClick = (event, emojiObject) => {
+        setChosenEmoji(emojiObject);
+        commentRef.current.value = chosenEmoji?.emoji;
+        setComment(commentRef.current.value);
+        setOpenEmoji(false);
+    };
+
     return (
         <div className="bg-white my-7 border rounded-sm">
             <div className="flex items-center p-5">
@@ -95,7 +117,7 @@ function Post({ props }) {
                     alt={`header-post-id-${props.id}`}
                 />
                 <p className="flex-1 font-bold">{props.username}</p>
-                <DotsCircleHorizontalIcon className="h-5" />
+                <DotsHorizontalIcon className="h-5 cursor-pointer" />
             </div>
 
             {/* Img */}
@@ -112,7 +134,7 @@ function Post({ props }) {
                         ) : (
                             <HeartIcon onClick={likePost} className="post-btn" />
                         )}
-                        
+
                         <ChatIcon className="post-btn" />
                         <PaperAirplaneIcon className="post-btn" />
                     </div>
@@ -122,13 +144,13 @@ function Post({ props }) {
             )}
 
             {/* Caption */}
-            <p className="p-5 truncate">
+            <div className="p-5 truncate">
                 {likes.length > 0 && (
                     <p className="font-bold mb-1">{likes.length} {likes.length > 1 ? 'likes' : 'like'}</p>
                 )}
                 <span className="font-bold mr-1">{props.username}</span>
                 {props.caption}
-            </p>
+            </div>
             {/* Comments */}
             {comments.length > 0 && (
                 <div className="ml-10 h-20 overflow-y-scroll scrollbar-thumb-black scrollbar-thin">
@@ -146,20 +168,36 @@ function Post({ props }) {
                     ))}
                 </div>
             )}
+            {/* Created post time */}
+            <div className="pl-5">
+                <Moment fromNow className="text-sm text-gray-500">
+                    {props.timestamp?.toDate()}
+                </Moment>
+            </div>
+
             {/* Input Box */}
             {session && (
-                <form className="flex items-center p-4">
-                    <EmojiHappyIcon className="h-7" />
+                <form className="relative flex items-center p-4">
+                    <div className={`${(!openEmoji && `hidden`)} absolute -top-80 select-none`}>
+                        <Picker
+                            onEmojiClick={onEmojiClick}
+                            disableAutoFocus={true}
+                            groupNames={{ smileys_people: "PEOPLE" }}
+                            native
+                        />
+                    </div>
+                    <EmojiHappyIcon className="h-7 cursor-pointer hover:scale-110" onClick={() => setOpenEmoji(openEmoji ? false : true)} />
                     <input
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         type="text"
                         placeholder="Add a comment..."
                         className="border-none flex-1 focus:ring-0 outline-none"
+                        ref={commentRef}
                     />
                     <button
                         type="submit"
-                        disabled={!comment.trim()}
+                        disabled={!comment}
                         onClick={sendComment}
                         className="font-semibold text-blue-400"
                     >
@@ -167,6 +205,7 @@ function Post({ props }) {
                     </button>
                 </form>
             )}
+
         </div>
     )
 }
