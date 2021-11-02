@@ -7,8 +7,11 @@
         @apply hidden h-7 w-7 md:inline-flex cursor-pointer transform hover:scale-125 transition-all duration-150 ease-out;
     }
     .post-btn {
-        @apply h-7 hover:scale-125 cursor-pointer transition-all duration-150 ease-out
-    }    
+        @apply h-7 hover:scale-125 cursor-pointer transition-all duration-150 ease-out select-none
+    }  
+    .menu-icon-dropdown {
+        @apply flex flex-row items-center truncate py-3 pl-3 hover:bg-gray-100
+    }  
 }
 
 /* Handle */
@@ -16,3 +19,45 @@
     border-radius: 100vh;
     border: 1px solid #000000;
 }
+
+.profile-dropdown {
+    background: #FFFFFF;
+    border: 8px solid #fffefe;
+    box-shadow: 0 5px 20px rgb(0 0 0 / 30%);
+    float: left;
+    position: absolute;
+    margin: 0;
+    top: 3.2em;
+    right: -1rem;
+    width: 250px;
+    height: auto;
+    z-index: 99999;
+    border-radius: 5px;
+    transition: 1s ease-out;
+}
+
+.profile-dropdown:before {
+    position: absolute;
+    right: 1.5rem;
+    top: -1rem;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 10px 10px 10px;
+    border-color: transparent transparent #fae0bb transparent;
+    z-index:9999;
+}
+
+.profile-dropdown:after {
+    content:"";
+    position: absolute;
+    right: 0.75rem;
+    top: -22px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 5px 15px 15px 15px;
+    border-color: transparent transparent #ffffff transparent;
+    z-index:9998;
+}
+

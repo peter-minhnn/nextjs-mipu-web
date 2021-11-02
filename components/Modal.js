@@ -5,7 +5,7 @@ import { Fragment, useRef, useState } from 'react'
 import { CameraIcon } from '@heroicons/react/outline'
 import { db, storage } from '../firebase'
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from '@firebase/firestore'
-import { useSession } from 'next-auth/react'
+import { useSession, getSession } from 'next-auth/react'
 import { ref, getDownloadURL, uploadString } from '@firebase/storage'
 
 function Modal() {
@@ -19,7 +19,7 @@ function Modal() {
     const uploadPost = async () => {
         if (loading) return;
         setLoading(true);
-
+        
         // 1) Create a post and add to firestore 'posts' collection
         // 2) Get the Post ID for the newly created post
         // 3) Upload the image to firebase storage with the post ID
@@ -29,7 +29,7 @@ function Modal() {
             caption: captionRef.current.value,
             profileImg: session.user.image,
             timestamp: serverTimestamp()
-        })
+        });
 
         const imageRef = ref(storage, `posts/${docRef.id}/image`);
 
@@ -37,7 +37,8 @@ function Modal() {
             const downloadURL = await getDownloadURL(imageRef);
             await updateDoc(doc(db, 'posts', docRef.id), {
                 image: downloadURL,
-                id: docRef.id
+                id: docRef.id,
+                uid: session?.user?.uid
             });
         });
 
