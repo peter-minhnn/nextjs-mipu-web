@@ -8,7 +8,8 @@ import {
     EmojiHappyIcon,
 } from '@heroicons/react/outline'
 import {
-    HeartIcon as HeartIconFilled
+    HeartIcon as HeartIconFilled,
+    ChevronDownIcon
 } from '@heroicons/react/solid'
 import { useSession } from 'next-auth/react'
 import {
@@ -24,7 +25,9 @@ import {
 } from '@firebase/firestore'
 import Moment from 'react-moment'
 import { db } from '../firebase'
+import { Menu, Transition } from '@headlessui/react'
 import dynamic from 'next/dynamic'
+import { Fragment } from 'react'
 const Picker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 function Post({ props }) {
@@ -35,12 +38,14 @@ function Post({ props }) {
     const [hasLiked, setHasLiked] = useState(false);
     const [openEmoji, setOpenEmoji] = useState(false);
     const [chosenEmoji, setChosenEmoji] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [likeContents, setLikeContents] = useState(null);
     const commentRef = useRef(null);
 
     useEffect(
         () => {
             if (props?.id) {
-                onSnapshot(
+                return onSnapshot(
                     query(
                         collection(db, 'posts', props.id, 'comments'),
                         orderBy('timestamp', 'desc')
@@ -55,29 +60,77 @@ function Post({ props }) {
 
     useEffect(
         () => {
-            if (props?.id) {
-                onSnapshot(
-                    collection(db, 'posts', props.id, 'likes'),
-                    snapshot => {
-                        setLikes(snapshot.docs);
-                    })
-            }
+            return onSnapshot(
+                collection(db, 'posts', props.id, 'likes'),
+                snapshot => {
+                    setLikes(snapshot.docs);
+                })
         }
         , [db, props.id]
     );
 
-    useEffect(() =>
-        setHasLiked(likes.findIndex(like => like.id === session?.user?.uid) !== -1),
-        [likes]
-    );
+    useEffect(() => {
+        setHasLiked(likes.findIndex(like => like.id === session?.user?.uid) !== -1);
+        onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
+            setUsers(snapshot.docs);
+        });
+
+        if (likes.length > 0) {
+            var html = '', imageHtml = '';    
+            if (likes.length === 1) {
+                imageHtml = '';
+                document.getElementById(`image-list_${props.id}`).innerHTML = '';
+                likes.map((like, i) => {
+                    users.map((user, i) => {
+                        if (user.data().uid === like.data().uid) {
+                            html = `<img src="${user.data().userImage}" class="h-5 w-5 rounded-full" alt="user-image" crossOrigin="Anonymous"/>
+                            <p class="pl-2">Liked by <strong>
+                                   <a href="javascript:void(0);" class="no-underline">${like.data().username}</a></strong>
+                            </p>`
+                            document.getElementById(`likes_${props.id}`).innerHTML = html;
+                        }
+                    })
+                });
+            }
+            else {
+                html = '';
+                likes.map((like, i) => {
+                    if (like.data().postId == props.id) {
+                        if (like.data().uid === session?.user.uid)  {
+                            imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-10 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                        }
+                        else if (like.data().uid !== session?.user.uid) {
+                            imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                        }
+    
+                        if (like.data().username === session?.user.username) {
+                            html = `<p class="pl-11">Liked by <strong>
+                                        <a href="javascript:void(0);" class="no-underline">${like.data().username}</a></strong>
+                                    </p>`;
+                        }
+                    }
+                })
+
+                html += `<p class="pl-2">and <strong>
+                            <a href="javascript:void(0);" class="no-underline">${(likes.length - 1) > 1 ? `${(likes.length - 1)} others` : `${(likes.length - 1)} other`}</a></strong>
+                        </p>`;
+                document.getElementById(`image-list_${props.id}`).innerHTML = imageHtml;
+                document.getElementById(`likes_${props.id}`).innerHTML = html;
+            }
+        }
+
+    }, [likes]);
 
     const likePost = async () => {
         if (hasLiked) {
-            await deleteDoc(doc(db, 'posts', props.id, 'likes', session.user.uid));
+            await deleteDoc(doc(db, 'posts', props.id, 'likes', session?.user?.uid));
         }
         else {
-            await setDoc(doc(db, 'posts', props.id, 'likes', session.user.uid), {
-                username: session.user.username
+            await setDoc(doc(db, 'posts', props.id, 'likes', session?.user?.uid), {
+                username: session.user.username,
+                userImage: session.user.image,
+                uid: session?.user?.uid,
+                postId: props.id
             });
         }
     }
@@ -96,16 +149,69 @@ function Post({ props }) {
         })
     }
 
-    const addEmoji = () => {
-        openEmoji ? setOpenEmoji(false) : setOpenEmoji(true);
-    }
-
     const onEmojiClick = (event, emojiObject) => {
         setChosenEmoji(emojiObject);
         commentRef.current.value = chosenEmoji?.emoji;
         setComment(commentRef.current.value);
         setOpenEmoji(false);
     };
+
+    const MenuPost = (id) => {
+        return (
+            <>
+                {(id != session?.user?.uid) && (
+                    <Transition
+                        as={Fragment}
+                        enter="transition ease-out duration-100"
+                        enterFrom="transform opacity-0 scale-95"
+                        enterTo="transform opacity-100 scale-100"
+                        leave="transition ease-in duration-75"
+                        leaveFrom="transform opacity-100 scale-100"
+                        leaveTo="transform opacity-0 scale-95"
+                    >
+                        <Menu.Items className="absolute right-0 w-56 mt-2 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div className="px-1 py-1 ">
+                                <Menu.Item>
+                                    {({ active }) => (
+                                        <button
+                                            className={`${active ? 'bg-gray-100 text-black' : 'text-red-600'
+                                                } group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                        >
+                                            Unfollow
+                                        </button>
+                                    )}
+                                </Menu.Item>
+                            </div>
+                            <div className="px-1 py-1">
+                                <Menu.Item>
+                                    {({ active }) => (
+                                        <button
+                                            className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'
+                                                } group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                        >
+                                            Go to post
+                                        </button>
+                                    )}
+                                </Menu.Item>
+                            </div>
+                            <div className="px-1 py-1">
+                                <Menu.Item>
+                                    {({ active }) => (
+                                        <button
+                                            className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'
+                                                } group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                        >
+                                            Copy link
+                                        </button>
+                                    )}
+                                </Menu.Item>
+                            </div>
+                        </Menu.Items>
+                    </Transition>
+                )}
+            </>
+        )
+    }
 
     return (
         <div className="bg-white my-7 border rounded-sm">
@@ -117,7 +223,50 @@ function Post({ props }) {
                     alt={`header-post-id-${props.id}`}
                 />
                 <p className="flex-1 font-bold">{props.username}</p>
-                <DotsHorizontalIcon className="h-5 cursor-pointer" />
+                <Menu as="div" className="relative">
+                    <Menu.Button className="bg-transparent text-black">
+                        <DotsHorizontalIcon className="h-5 cursor-pointer" aria-hidden="true" />
+                    </Menu.Button>
+                    {(props.uid == session?.user?.uid) && (
+                        <Transition
+                            as={Fragment}
+                            enter="transition ease-out duration-100"
+                            enterFrom="transform opacity-0 scale-95"
+                            enterTo="transform opacity-100 scale-100"
+                            leave="transition ease-in duration-75"
+                            leaveFrom="transform opacity-100 scale-100"
+                            leaveTo="transform opacity-0 scale-95"
+                        >
+                            <Menu.Items className="absolute right-0 w-56 mt-2 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <div className="px-1 py-1 ">
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <button
+                                                className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'
+                                                    } group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </Menu.Item>
+                                </div>
+                                <div className="px-1 py-1">
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <button
+                                                className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'
+                                                    } group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                            >
+                                                Go to post
+                                            </button>
+                                        )}
+                                    </Menu.Item>
+                                </div>
+                            </Menu.Items>
+                        </Transition>
+                    )}
+                    {MenuPost(props.uid)}
+                </Menu>
             </div>
 
             {/* Img */}
@@ -146,7 +295,10 @@ function Post({ props }) {
             {/* Caption */}
             <div className="p-5 truncate">
                 {likes.length > 0 && (
-                    <p className="font-bold mb-1">{likes.length} {likes.length > 1 ? 'likes' : 'like'}</p>
+                    <div className="flex flex-row items-center pb-2 relative">
+                        <div id={`image-list_${props.id}`} className="flex items-center flex-row-reverse"></div>
+                        <div id={`likes_${props.id}`} className="flex items-center"></div>
+                    </div>
                 )}
                 <span className="font-bold mr-1">{props.username}</span>
                 {props.caption}
@@ -168,8 +320,9 @@ function Post({ props }) {
                     ))}
                 </div>
             )}
+
             {/* Created post time */}
-            <div className="pl-5">
+            <div className="pl-5 pb-2">
                 <Moment fromNow className="text-sm text-gray-500">
                     {props.timestamp?.toDate()}
                 </Moment>
