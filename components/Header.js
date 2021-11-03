@@ -13,16 +13,30 @@ import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { useRecoilState } from 'recoil'
 import { ModalState } from '../atoms/modalAtom'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 function Header() {
     const { data: session } = useSession();
     const [open, setOpen] = useRecoilState(ModalState);
     const [isOpenProfile, setIsOpenProfile] = useState(false);
+    const profileMenuRef = useRef(null);
     const router = useRouter();
+
+    useEffect(() => {
+        document.addEventListener('mousedown', handleCloseProfileMenu);
+        return () => {
+            document.removeEventListener('mousedown', handleCloseProfileMenu);
+        }
+    }, [isOpenProfile])
 
     const openProfileMenu = () => {
         setIsOpenProfile(isOpenProfile ? false : true);
+    }
+
+    const handleCloseProfileMenu = (e) => {
+        if (profileMenuRef && !profileMenuRef?.current?.contains(e.target) && isOpenProfile) {
+            setIsOpenProfile(false);
+        }
     }
 
     return (
@@ -69,11 +83,11 @@ function Header() {
                                 <img
                                     src={session?.user?.image ? session.user?.image : `/assets/images/user-icon.jpg`}
                                     alt="mipu-love"
-                                    className={`h-10 w-10 rounded-full cursor-pointer p-1 border border-white ${isOpenProfile && 'border-black'}`}
+                                    className={`h-10 w-10 rounded-full cursor-pointer p-[0.18rem] border border-white ${isOpenProfile && 'border-black'}`}
                                     onClick={openProfileMenu}
                                 />
                                 {isOpenProfile && (
-                                    <div className="profile-dropdown flex flex-col justify-items-start">
+                                    <div className="profile-dropdown flex flex-col justify-items-start" ref={profileMenuRef}>
                                         <div className="menu-icon-dropdown">
                                             <UserCircleIcon className="h-5 w-5" />
                                             <span className="pl-2">Profile</span>

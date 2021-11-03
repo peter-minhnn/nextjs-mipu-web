@@ -5,7 +5,6 @@ import { db } from '../firebase'
 
 function Suggestions() {
     const { data: session } = useSession();
-    const [docRefId, setDocRefId] = useState(null);
     const [suggestions, setSuggestions] = useState([]);
 
     useEffect(() => {
@@ -13,34 +12,9 @@ function Suggestions() {
     }, []);
 
     const UpdateUsers = async () => {
-        //localStorage.setItem('login_provider', JSON.stringify(session?.user.uid));
-
         onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
             setSuggestions(snapshot.docs);
         });
-
-        // if (suggestions.length > 0) {
-        //     suggestions.filter(async (profile, i) => {
-        //         if (profile.data().uid != session?.user.uid) {
-        //             await setDoc(doc(db, 'users', session?.user.uid), {
-        //                 email: session?.user?.email,
-        //                 username: session?.user?.username,
-        //                 userImage: session?.user?.image,
-        //                 uid: session?.user.uid,
-        //                 timestamp: serverTimestamp()
-        //             });
-        //         }              
-        //     })
-        // }
-        // else {
-        //     await setDoc(doc(db, 'users', session?.user.uid), {
-        //         email: session?.user?.email,
-        //         username: session?.user?.username,
-        //         userImage: session?.user?.image,
-        //         uid: session?.user.uid,
-        //         timestamp: serverTimestamp()
-        //     });
-        // }
     }
 
     return (
@@ -61,7 +35,7 @@ function Suggestions() {
 
                             <div className="flex-1 ml-4">
                                 <h2 className="font-semibold text-sm">{profile.data().username}</h2>
-                                {/* <h3 className="text-xs text-gray-400">Work at {profile.company.name}</h3> */}
+                                <h3 className="text-xs text-gray-400">People you may know</h3>
                             </div>
 
                             <button className="text-blue-400 text-sm">Follow</button>
