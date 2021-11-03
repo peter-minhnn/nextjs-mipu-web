@@ -1,4 +1,4 @@
-import { collection, onSnapshot, orderBy, query, setDoc, doc, serverTimestamp } from "@firebase/firestore";
+import { collection, onSnapshot, orderBy, query, setDoc, doc, serverTimestamp, deleteDoc } from "@firebase/firestore";
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { db } from "../../../firebase";
@@ -21,7 +21,7 @@ export default NextAuth({
       session.user.username = session.user.name.split(' ').join('').toLocaleLowerCase();
       session.user.uid = token.sub;
       var data = null;
-
+      
       onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
         data = snapshot.docs;
       });
@@ -36,21 +36,32 @@ export default NextAuth({
               uid: session?.user.uid,
               timestamp: serverTimestamp()
             });
+            await setDoc(doc(db, 'tokens', 'login'), {
+              token: session?.user.uid,
+              timestamp: serverTimestamp()
+            });
+          }
+          // Remove token when user log out
+          let tokens = null;
+          if (tokens && tokens.length > 0) {
+            if (profile.data().uid != token.sub) {
+              await deleteDoc(doc(db, 'tokens', 'login'));
+            }
           }
         })
       }
       else {
-        await setDoc(doc(db, 'users', session?.user.uid), {
+        await setDoc(doc(db, 'users', 'login'), {
           email: session?.user?.email,
           username: session?.user?.username,
           userImage: session?.user?.image,
           uid: session?.user.uid,
           timestamp: serverTimestamp()
         });
-      }
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem('login_provider', JSON.stringify(session?.user.uid));
+        await setDoc(doc(db, 'tokens', 'login'), {
+          token: session?.user.uid,
+          timestamp: serverTimestamp()
+        });
       }
 
       return session;

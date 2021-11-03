@@ -1,20 +1,36 @@
-import { signIn as SignInProvider, getProviders, useSession } from 'next-auth/react'
+import { collection, doc, getDoc, onSnapshot, query } from '@firebase/firestore';
+import { signIn as SignInProvider, getProviders } from 'next-auth/react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { useRecoilState } from 'recoil';
+import { LoginState } from '../../atoms/modalAtom';
+import { db } from '../../firebase';
 
 function signIn({ providers }) {
     const router = useRouter();
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useRecoilState(LoginState);
 
-    useEffect(() => {
-        const login_provider = localStorage.getItem('login_provider');
-        if (login_provider) {
-            setIsLoggedIn(true);
-            return router.push('/');
+    useEffect(
+        () => CheckUserLogin(), [isLoggedIn, db]
+    )
+
+    const CheckUserLogin = async () => {
+        const docRef = doc(db, "tokens", 'login');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            console.log("Document data:", docSnap.data());
+            if (docSnap.data().token && !isLoggedIn) {
+                setIsLoggedIn(true);
+                router.push('/');
+            }
         }
-        else setIsLoggedIn(false);
-    }, [isLoggedIn]);
+        else {
+            // doc.data() will be undefined in this case
+            console.log("No such document!");
+            router.push('/auth/signin');
+        }
+    }
 
     return (
         <>

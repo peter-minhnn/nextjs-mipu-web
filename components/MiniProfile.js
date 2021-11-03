@@ -1,8 +1,19 @@
-import React, { useEffect, useState } from 'react'
 import { signOut, useSession } from 'next-auth/react'
+import { doc, deleteDoc } from "@firebase/firestore";
+import { db } from "../firebase";
+import { useRecoilState } from 'recoil';
+import { LoginState } from '../atoms/modalAtom';
 
 function MiniProfile() {
     const { data: session } = useSession();
+    const [isLoggedIn, setIsLoggedIn] = useRecoilState(LoginState);
+
+    const SignOut = async () => {
+        await deleteDoc(doc(db, 'tokens', 'login')).then(async res => {
+            setIsLoggedIn(false);
+            await signOut()
+        });
+    }
 
     return (
         <div className="flex items-center justify-between mt-14 ml-10">
@@ -16,10 +27,7 @@ function MiniProfile() {
                 <h3 className="text-sm text-gray-400">Welcome to Mipu Social</h3>
             </div>
             <button
-                onClick={() => {
-                    localStorage.removeItem('login_provider');
-                    signOut();
-                }}
+                onClick={SignOut}
                 className="text-blue-400 text-sm font-semibold">Sign out</button>
         </div>
     )

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, Fragment } from 'react'
 import {
     DotsHorizontalIcon,
     HeartIcon,
@@ -17,6 +17,7 @@ import {
     collection,
     deleteDoc,
     doc,
+    getDoc,
     onSnapshot,
     orderBy,
     query,
@@ -26,8 +27,11 @@ import {
 import Moment from 'react-moment'
 import { db } from '../firebase'
 import { Menu, Transition } from '@headlessui/react'
+import ConfirmDialog from '../components/common/ConfirmDialog'
+import { deleteObject, getStorage } from '@firebase/storage'
 import dynamic from 'next/dynamic'
-import { Fragment } from 'react'
+import { ModalConfirmState, ModalConfirmButtonState } from '../atoms/modalAtom'
+import { useRecoilState } from 'recoil'
 const Picker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 function Post({ props }) {
@@ -39,9 +43,12 @@ function Post({ props }) {
     const [openEmoji, setOpenEmoji] = useState(false);
     const [chosenEmoji, setChosenEmoji] = useState(null);
     const [users, setUsers] = useState([]);
-    const [likeContents, setLikeContents] = useState(null);
+    const [openDialogConfirm, setOpenDialogConfirm] = useRecoilState(ModalConfirmState);
+    const [confirmButton, setConfirmButton] = useRecoilState(ModalConfirmButtonState);
+    console.log('confirmButton', confirmButton)
     const commentRef = useRef(null);
 
+    //Get comments by posts
     useEffect(
         () => {
             if (props?.id) {
@@ -58,25 +65,32 @@ function Post({ props }) {
         , [db, props.id]
     );
 
+    //Get likes by users
     useEffect(
         () => {
-            return onSnapshot(
-                collection(db, 'posts', props.id, 'likes'),
-                snapshot => {
+            if (props.id) {
+                onSnapshot(collection(db, 'posts', props.id, 'likes'), snapshot => {
                     setLikes(snapshot.docs);
-                })
+                });
+            }
+
+            onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
+                setUsers(snapshot.docs);
+            });
         }
         , [db, props.id]
     );
 
-    useEffect(() => {
-        setHasLiked(likes.findIndex(like => like.id === session?.user?.uid) !== -1);
-        onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
-            setUsers(snapshot.docs);
-        });
+    //Get user's post has liked
+    useEffect(() => setHasLiked(likes.findIndex(like => like.id === session?.user?.uid) !== -1), [likes])
 
-        if (likes.length > 0) {
-            var html = '', imageHtml = '';    
+    //Initialize liked by users
+    useEffect(() => GetLikes(), [likes]);
+
+    //Function get user's like
+    const GetLikes = () => {
+        if (likes.length > 0 && users.length > 0) {
+            var html = '', imageHtml = '';
             if (likes.length === 1) {
                 imageHtml = '';
                 document.getElementById(`image-list_${props.id}`).innerHTML = '';
@@ -94,22 +108,48 @@ function Post({ props }) {
             }
             else {
                 html = '';
+                let sessionIdx = 0;
+                let countImages = 0;
                 likes.map((like, i) => {
-                    if (like.data().postId == props.id) {
-                        if (like.data().uid === session?.user.uid)  {
+                    users.map((user) => {
+                        if (like.data().uid === session?.user.uid) {
+                            sessionIdx++;
+                            countImages++;
                             imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-10 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
                         }
-                        else if (like.data().uid !== session?.user.uid) {
-                            imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                        if (user.data().uid === like.data().uid && like.data().uid !== session?.user.uid) {
+                            countImages++
+                            if (countImages < 2) imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
                         }
-    
                         if (like.data().username === session?.user.username) {
+                            html = '';
                             html = `<p class="pl-11">Liked by <strong>
-                                        <a href="javascript:void(0);" class="no-underline">${like.data().username}</a></strong>
-                                    </p>`;
+                                    <a href="javascript:void(0);" class="no-underline">${like.data().username}</a></strong>
+                                </p>`;
                         }
-                    }
-                })
+                    });
+                });
+
+                likes.map((like, i) => {
+                    users.map((user) => {
+                        if (user.data().uid === like.data().uid && like.data().uid !== session?.user.uid) {
+                            if (i == 0) {
+                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                            }
+                            if (i == 1) {
+                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                            }
+                        }
+
+                        if (like.data().username !== session?.user.username) {
+                            if (!html) {
+                                html = `<p class="pl-11">Liked by <strong>
+                                            <a href="javascript:void(0);" class="no-underline">${like.data().username}</a></strong>
+                                        </p>`;
+                            }
+                        }
+                    });
+                });
 
                 html += `<p class="pl-2">and <strong>
                             <a href="javascript:void(0);" class="no-underline">${(likes.length - 1) > 1 ? `${(likes.length - 1)} others` : `${(likes.length - 1)} other`}</a></strong>
@@ -118,9 +158,9 @@ function Post({ props }) {
                 document.getElementById(`likes_${props.id}`).innerHTML = html;
             }
         }
+    }
 
-    }, [likes]);
-
+    //Save or delete like button
     const likePost = async () => {
         if (hasLiked) {
             await deleteDoc(doc(db, 'posts', props.id, 'likes', session?.user?.uid));
@@ -135,6 +175,7 @@ function Post({ props }) {
         }
     }
 
+    //Save comment to firestore
     const sendComment = async (e) => {
         e.preventDefault();
         const commentToSend = comment;
@@ -149,13 +190,36 @@ function Post({ props }) {
         })
     }
 
-    const onEmojiClick = (event, emojiObject) => {
+    //Open emoji comment
+    const OnEmojiClick = (event, emojiObject) => {
         setChosenEmoji(emojiObject);
-        commentRef.current.value = chosenEmoji?.emoji;
+        commentRef.current.value += chosenEmoji?.emoji;
         setComment(commentRef.current.value);
         setOpenEmoji(false);
     };
 
+    // Delete post by user
+    const DeletePost = async () => {
+        await deleteDoc(doc(db, 'posts', props.id)).then(res => {
+            console.log('Deleted Post Successfully', res);
+            const storage = getStorage();
+            // Create a reference to the file to delete
+            const imageRef = ref(storage, `posts/${props.id}/image`);
+
+            // Delete the file
+            deleteObject(imageRef).then(() => {
+                // File deleted successfully
+                console.log('Deleted Image Storage Successfully', res);
+            }).catch((error) => {
+                // Uh-oh, an error occurred!
+                console.log('Deleted Image Storage Failed: ', error.message);
+            });
+        }).catch(error => {
+            console.log('Deleted Post Failed: ', error.message);
+        });
+    }
+
+    //Menu function of post
     const MenuPost = (id) => {
         return (
             <>
@@ -242,8 +306,9 @@ function Post({ props }) {
                                     <Menu.Item>
                                         {({ active }) => (
                                             <button
-                                                className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'
-                                                    } group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                                type="button"
+                                                className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'} group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                                onClick={() => setOpenDialogConfirm(true)}
                                             >
                                                 Delete
                                             </button>
@@ -333,7 +398,7 @@ function Post({ props }) {
                 <form className="relative flex items-center p-4">
                     <div className={`${(!openEmoji && `hidden`)} absolute -top-80 select-none`}>
                         <Picker
-                            onEmojiClick={onEmojiClick}
+                            onEmojiClick={OnEmojiClick}
                             disableAutoFocus={true}
                             groupNames={{ smileys_people: "PEOPLE" }}
                             native
@@ -358,7 +423,12 @@ function Post({ props }) {
                     </button>
                 </form>
             )}
-
+            <ConfirmDialog
+                title="Confirm"
+                content="Are you sure you want to delete this post?"
+                textCancel="Cancel"
+                textOk="Yes"           
+            />
         </div>
     )
 }

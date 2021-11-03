@@ -4,39 +4,37 @@ import { useRouter } from 'next/router'
 import Feed from '../components/Feed'
 import Header from '../components/Header'
 import Modal from '../components/Modal'
-import { collection, onSnapshot, orderBy, query } from '@firebase/firestore'
+import { collection, doc, getDoc, onSnapshot, query } from '@firebase/firestore'
 import { db } from '../firebase'
+import { LoginState } from '../atoms/modalAtom'
+import { useRecoilState } from 'recoil'
+import Loading from '../components/common/Loading'
 
 export default function Home() {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useRecoilState(LoginState);
   const [users, setUsers] = useState([]);
 
   useEffect(
-    () => {
-      const login_provider = localStorage.getItem('login_provider');
-
-      onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
-        setUsers(snapshot.docs);
-      });
-
-      // if (users.length > 0 && login_provider) {
-      //   const uid = JSON.parse(login_provider);
-      //   users.map((user, i) => {
-      //     if (user.data().uid === uid) setIsLoggedIn(true)
-      //   });
-
-      //   if (!isLoggedIn) return router.push('/auth/signin');
-      // }
-      // else {
-      //   return router.push('/auth/signin');
-      // }
-      
-      if (!login_provider) {
-        return router.push('/auth/signin');
-      } else setIsLoggedIn(true);
-    }, []
+    () => setTimeout(() => {
+      CheckUserLogin()
+    }, 1000), [isLoggedIn, db]
   )
+
+  const CheckUserLogin = async () => {
+    const docRef = doc(db, "tokens", 'login');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        console.log("Document data:", docSnap.data());
+        if (docSnap.data().token && !isLoggedIn) setIsLoggedIn(true);
+        // if (!isLoggedIn) router.push('/auth/signin');
+      }
+      else {
+        // doc.data() will be undefined in this case
+        console.log("No such document!");
+        router.push('/auth/signin');
+      }
+  }
 
   return (
     <div className="bg-gray-50 h-screen overflow-y-scroll">
@@ -52,6 +50,8 @@ export default function Home() {
           <Modal />
         </>
       )}
+
+      {!isLoggedIn && (<Loading />)}
     </div>
   )
 }

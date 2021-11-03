@@ -5,7 +5,7 @@ import { Fragment, useRef, useState } from 'react'
 import { CameraIcon } from '@heroicons/react/outline'
 import { db, storage } from '../firebase'
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from '@firebase/firestore'
-import { useSession, getSession } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { ref, getDownloadURL, uploadString } from '@firebase/storage'
 
 function Modal() {
