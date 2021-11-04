@@ -99,7 +99,7 @@ function Header({ providers }) {
                                 <img
                                     src={session?.user?.image ? session.user?.image : `/assets/images/user-icon.jpg`}
                                     alt="mipu-love"
-                                    className={`h-10 w-10 rounded-full cursor-pointer p-[0.18rem] border border-white ${isOpenProfile && 'border-black'}`}
+                                    className={`h-10 w-10 rounded-full cursor-pointer p-[0.18rem] border ${isOpenProfile ? 'border-black': 'border-white'}`}
                                     onClick={openProfileMenu}
                                 />
                                 {isOpenProfile && (

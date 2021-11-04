@@ -11,7 +11,7 @@
         @apply h-7 hover:scale-125 cursor-pointer transition-all duration-150 ease-out select-none;
     }
     .menu-icon-dropdown {
-        @apply flex flex-row items-center truncate py-3 pl-4 hover:bg-gray-100 cursor-pointer;
+        @apply flex flex-row items-center truncate py-3 pl-4 hover:bg-gray-100 cursor-pointer z-[9999];
     }
 }
 /* Handle */
@@ -23,7 +23,7 @@
 .profile-dropdown {
     background: #ffffff;
     border: 0;
-    box-shadow: 0 5px 20px rgb(0 0 0 / 30%);
+    box-shadow: 0 5px 20px rgb(0 0 0 / 10%);
     float: left;
     position: absolute;
     margin: 0;
@@ -51,8 +51,8 @@
 .profile-dropdown:after {
     content: "";
     position: absolute;
-    right: 0.75rem;
-    top: -22px;
+    right: 1.3rem;
+    top: -14px;
     width: 0;
     height: 0;
     border-style: solid;

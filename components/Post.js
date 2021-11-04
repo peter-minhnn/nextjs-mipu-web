@@ -196,8 +196,12 @@ function Post({ props }) {
     const DeletePost = async () => {
         await deleteDoc(doc(db, 'posts', props.id)).then(async res => {
             console.log('Deleted Post Successfully', res);
-            await deleteDoc(doc(db, 'posts', props.id, 'likes', props.uid));
             const storage = getStorage();
+            //Delete likes 
+            if (likes.length > 0) await deleteDoc(doc(db, `posts/${props.id}/likes`, props.uid));
+            //Delete comments 
+            if (comments.length > 0) await deleteDoc(doc(db, `posts/${props.id}/comments`, props.uid));
+            
             // Create a reference to the file to delete
             const imageRef = ref(storage, `posts/${props.id}/image`);
 
