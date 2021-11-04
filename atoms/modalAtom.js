@@ -10,6 +10,12 @@ export const LoginState = atom({
     default: false
 });
 
+export const LoadingState = atom({
+    key: 'loadingState',
+    default: false
+});
+
+
 export const ModalConfirmState = atom({
     key: 'modalConfirm',
     default: false

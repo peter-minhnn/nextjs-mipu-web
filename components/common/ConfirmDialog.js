@@ -1,14 +1,17 @@
-import { Fragment } from "react"
+import { Fragment, useEffect } from "react"
 import { Dialog, Transition } from '@headlessui/react'
 import { useRecoilState } from "recoil"
 import { ModalConfirmState, ModalConfirmButtonState } from '../../atoms/modalAtom'
+import { useConfirmButton } from "./CustomHooks";
 
 function ConfirmDialog({ title, content, textOk, textCancel }) {
     const [openDialogConfirm, setOpenDialogConfirm] = useRecoilState(ModalConfirmState);
     const [confirmButton, setConfirmButton] = useRecoilState(ModalConfirmButtonState);
 
-    console.log('ConfirmDialog ', openDialogConfirm)
- 
+    const HandleClickConfirmButton = value => {
+        setConfirmButton(value);
+        setOpenDialogConfirm(false);
+    }
     return (
         <Transition.Root show={openDialogConfirm} as={Fragment}>
             <Dialog
@@ -26,7 +29,7 @@ function ConfirmDialog({ title, content, textOk, textCancel }) {
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
-                        <Dialog.Overlay className="fixed inset-0 bg-gray-100 bg-opacity-10 transition-opacity" />
+                        <Dialog.Overlay className="fixed inset-0 bg-gray-200 bg-opacity-20 transition-opacity" />
                     </Transition.Child>
 
                     {/* This element is to trick the browser into centering the modal contents */}
@@ -47,8 +50,8 @@ function ConfirmDialog({ title, content, textOk, textCancel }) {
                             <div className={`confirm ${!openDialogConfirm ? 'hidden' : 'block'}`} >
                                 <h1>{title}</h1>
                                 <p>{content}</p>
-                                <button type="button" onClick={() => setConfirmButton(false)}>{textCancel}</button>
-                                <button type="button" onClick={() => setConfirmButton(true)}>{textOk}</button>
+                                <button type="button" onClick={() => HandleClickConfirmButton(false)}>{textCancel}</button>
+                                <button type="button" onClick={() => HandleClickConfirmButton(true)}>{textOk}</button>
                             </div>
                         </div>
 

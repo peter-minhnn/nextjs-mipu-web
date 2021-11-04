@@ -1,8 +1,7 @@
-
-
+import { useEffect } from "react";
 function Loading() {
     return (
-        <>
+        <div>
             <h1 className="title-loading">Cooking in progress..</h1>
             <div id="cooking">
                 <div className="bubble"></div>
@@ -20,7 +19,7 @@ function Loading() {
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     )
 }
 

@@ -12,7 +12,17 @@ function signIn({ providers }) {
     const [isLoggedIn, setIsLoggedIn] = useRecoilState(LoginState);
 
     useEffect(
-        () => CheckUserLogin(), [isLoggedIn, db]
+        () => {
+            let checkSwitchLogIn = localStorage.getItem('switch-accounts');
+            if (checkSwitchLogIn) {
+                Object.values(providers).map((provider) => {
+                    if (provider.name == 'Google') {
+                        SignInProvider(provider.id, { callbackUrl: '/' });
+                    }
+                })
+            }
+            else CheckUserLogin();
+        }, [isLoggedIn, db]
     )
 
     const CheckUserLogin = async () => {
@@ -22,6 +32,7 @@ function signIn({ providers }) {
             console.log("Document data:", docSnap.data());
             if (docSnap.data().token && !isLoggedIn) {
                 setIsLoggedIn(true);
+                localStorage.removeItem('switch-accounts');
                 router.push('/');
             }
         }
@@ -48,7 +59,6 @@ function signIn({ providers }) {
                                 <button
                                     className="flex flex-row justify-center items-center p-2 w-full bg-white rounded-lg text-black border"
                                     onClick={() => {
-                                        localStorage.setItem('login_provider', JSON.stringify(provider.id));
                                         SignInProvider(provider.id, { callbackUrl: '/' })
                                     }}
                                 >
