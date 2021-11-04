@@ -11,7 +11,7 @@
         @apply h-7 hover:scale-125 cursor-pointer transition-all duration-150 ease-out select-none;
     }
     .menu-icon-dropdown {
-        @apply flex flex-row items-center truncate py-3 pl-3 hover:bg-gray-100 cursor-pointer;
+        @apply flex flex-row items-center truncate py-3 pl-4 hover:bg-gray-100 cursor-pointer;
     }
 }
 /* Handle */
@@ -22,7 +22,7 @@
 
 .profile-dropdown {
     background: #ffffff;
-    border: 8px solid #fffefe;
+    border: 0;
     box-shadow: 0 5px 20px rgb(0 0 0 / 30%);
     float: left;
     position: absolute;
@@ -307,6 +307,9 @@
     border-top: 1px solid white;
     animation: fade 1s ease 1 forwards;
 }
+.confirm-bg-overlay {
+    background: rgba(0,0,0,.65);
+}
 .confirm h1 {
     text-align: center;
     font-size: 1.2rem;
@@ -345,5 +348,5 @@
     background: #f8f6f6;
 }
 .confirm button:active {
-    background: #d6d6d6;
+    background: #FFFFFF;
 }

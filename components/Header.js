@@ -9,16 +9,20 @@ import { HomeIcon, MenuIcon } from '@heroicons/react/solid'
 // images
 import mipuLogo from '../public/assets/images/mipu-logo.png'
 import iconLogoInstagram from '../public/assets/images/insta-logo-icon.png'
-import { signIn, useSession } from 'next-auth/react'
+import { signIn, signOut, useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { useRecoilState } from 'recoil'
-import { ModalState } from '../atoms/modalAtom'
+import { LoginState, ModalState } from '../atoms/modalAtom'
 import { useEffect, useRef, useState } from 'react'
+import { deleteDoc, doc } from '@firebase/firestore'
+import { db } from '../firebase'
+import { signIn as SignInProvider, getProviders } from 'next-auth/react'
 
-function Header() {
+function Header({ providers }) {
     const { data: session } = useSession();
     const [open, setOpen] = useRecoilState(ModalState);
     const [isOpenProfile, setIsOpenProfile] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useRecoilState(LoginState);
     const profileMenuRef = useRef(null);
     const router = useRouter();
 
@@ -37,6 +41,18 @@ function Header() {
         if (profileMenuRef && !profileMenuRef?.current?.contains(e.target) && isOpenProfile) {
             setIsOpenProfile(false);
         }
+    }
+
+    const SignOut = async () => {
+        await deleteDoc(doc(db, 'tokens', 'login')).then(async res => {
+            setIsLoggedIn(false);
+            await signOut()
+        });
+    }
+
+    const HandleSwitchAccounts = () => {
+        localStorage.setItem('switch-accounts', 'google');
+        router.push('/auth/signin');
     }
 
     return (
@@ -100,11 +116,11 @@ function Header() {
                                             <CogIcon className="h-5 w-5" />
                                             <span className="pl-2">Settings</span>
                                         </div>
-                                        <div className="menu-icon-dropdown">
+                                        <div className="menu-icon-dropdown" onClick={HandleSwitchAccounts}>
                                             <SwitchHorizontalIcon className="h-5 w-5" />
                                             <span className="pl-2">Switch Accounts</span>
                                         </div>
-                                        <div className="menu-icon-dropdown">
+                                        <div className="menu-icon-dropdown" onClick={SignOut}>
                                             <LogoutIcon className="h-5 w-5" />
                                             <span className="pl-2">Log Out</span>
                                         </div>
@@ -120,6 +136,17 @@ function Header() {
             </div>
         </div>
     )
+}
+
+
+export async function getServerSideProps() {
+    const providers = await getProviders();
+
+    return {
+        props: {
+            providers
+        }
+    }
 }
 
 export default Header;

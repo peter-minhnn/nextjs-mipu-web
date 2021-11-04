@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, Fragment } from 'react'
+import { useEffect, useRef, useState, Fragment, useCallback } from 'react'
 import {
     DotsHorizontalIcon,
     HeartIcon,
@@ -22,13 +22,13 @@ import {
     orderBy,
     query,
     serverTimestamp,
-    setDoc
+    setDoc,
+    where
 } from '@firebase/firestore'
 import Moment from 'react-moment'
 import { db } from '../firebase'
 import { Menu, Transition } from '@headlessui/react'
-import ConfirmDialog from '../components/common/ConfirmDialog'
-import { deleteObject, getStorage } from '@firebase/storage'
+import { deleteObject, getStorage, ref } from '@firebase/storage'
 import dynamic from 'next/dynamic'
 import { ModalConfirmState, ModalConfirmButtonState } from '../atoms/modalAtom'
 import { useRecoilState } from 'recoil'
@@ -41,42 +41,33 @@ function Post({ props }) {
     const [likes, setLikes] = useState([]);
     const [hasLiked, setHasLiked] = useState(false);
     const [openEmoji, setOpenEmoji] = useState(false);
-    const [chosenEmoji, setChosenEmoji] = useState(null);
     const [users, setUsers] = useState([]);
     const [openDialogConfirm, setOpenDialogConfirm] = useRecoilState(ModalConfirmState);
     const [confirmButton, setConfirmButton] = useRecoilState(ModalConfirmButtonState);
-    console.log('confirmButton', confirmButton)
     const commentRef = useRef(null);
 
     //Get comments by posts
     useEffect(
         () => {
             if (props?.id) {
-                return onSnapshot(
+                onSnapshot(
                     query(
                         collection(db, 'posts', props.id, 'comments'),
                         orderBy('timestamp', 'desc')
                     ),
                     snapshot => {
                         setComments(snapshot.docs);
-                    })
-            }
-        }
-        , [db, props.id]
-    );
+                    }
+                )
 
-    //Get likes by users
-    useEffect(
-        () => {
-            if (props.id) {
                 onSnapshot(collection(db, 'posts', props.id, 'likes'), snapshot => {
                     setLikes(snapshot.docs);
                 });
-            }
 
-            onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
-                setUsers(snapshot.docs);
-            });
+                onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
+                    setUsers(snapshot.docs);
+                });
+            }
         }
         , [db, props.id]
     );
@@ -85,7 +76,11 @@ function Post({ props }) {
     useEffect(() => setHasLiked(likes.findIndex(like => like.id === session?.user?.uid) !== -1), [likes])
 
     //Initialize liked by users
-    useEffect(() => GetLikes(), [likes]);
+    useEffect(() => GetLikes(), [likes, users]);
+
+    // useEffect(() => {
+    //     if (confirmButton) DeletePost();
+    // }, [db, props.id, confirmButton]);
 
     //Function get user's like
     const GetLikes = () => {
@@ -192,22 +187,22 @@ function Post({ props }) {
 
     //Open emoji comment
     const OnEmojiClick = (event, emojiObject) => {
-        setChosenEmoji(emojiObject);
-        commentRef.current.value += chosenEmoji?.emoji;
+        commentRef.current.value += emojiObject.emoji;
         setComment(commentRef.current.value);
         setOpenEmoji(false);
     };
 
     // Delete post by user
     const DeletePost = async () => {
-        await deleteDoc(doc(db, 'posts', props.id)).then(res => {
+        await deleteDoc(doc(db, 'posts', props.id)).then(async res => {
             console.log('Deleted Post Successfully', res);
+            await deleteDoc(doc(db, 'posts', props.id, 'likes', props.uid));
             const storage = getStorage();
             // Create a reference to the file to delete
             const imageRef = ref(storage, `posts/${props.id}/image`);
 
             // Delete the file
-            deleteObject(imageRef).then(() => {
+            await deleteObject(imageRef).then(() => {
                 // File deleted successfully
                 console.log('Deleted Image Storage Successfully', res);
             }).catch((error) => {
@@ -308,7 +303,7 @@ function Post({ props }) {
                                             <button
                                                 type="button"
                                                 className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'} group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
-                                                onClick={() => setOpenDialogConfirm(true)}
+                                                onClick={DeletePost}
                                             >
                                                 Delete
                                             </button>
@@ -396,7 +391,7 @@ function Post({ props }) {
             {/* Input Box */}
             {session && (
                 <form className="relative flex items-center p-4">
-                    <div className={`${(!openEmoji && `hidden`)} absolute -top-80 select-none`}>
+                    <div className={`${(!openEmoji && `hidden`)} absolute -top-80 z-20 select-none`}>
                         <Picker
                             onEmojiClick={OnEmojiClick}
                             disableAutoFocus={true}
@@ -412,6 +407,7 @@ function Post({ props }) {
                         placeholder="Add a comment..."
                         className="border-none flex-1 focus:ring-0 outline-none"
                         ref={commentRef}
+                        onFocus={() => setOpenEmoji(false)}
                     />
                     <button
                         type="submit"
@@ -423,12 +419,6 @@ function Post({ props }) {
                     </button>
                 </form>
             )}
-            <ConfirmDialog
-                title="Confirm"
-                content="Are you sure you want to delete this post?"
-                textCancel="Cancel"
-                textOk="Yes"           
-            />
         </div>
     )
 }

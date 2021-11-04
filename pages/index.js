@@ -9,6 +9,7 @@ import { db } from '../firebase'
 import { LoginState } from '../atoms/modalAtom'
 import { useRecoilState } from 'recoil'
 import Loading from '../components/common/Loading'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 
 export default function Home() {
   const router = useRouter();
@@ -48,6 +49,13 @@ export default function Home() {
           <Feed />
           {/* Modal */}
           <Modal />
+          
+          <ConfirmDialog
+                title="Confirm"
+                content="Are you sure you want to delete this post?"
+                textCancel="Cancel"
+                textOk="Yes"
+          />
         </>
       )}
 
