@@ -25,3 +25,8 @@ export const ModalConfirmButtonState = atom({
     key: 'modalButtonConfirm',
     default: false
 });
+
+export const PostPageState = atom({
+    key: 'postPageState',
+    default: {}
+});

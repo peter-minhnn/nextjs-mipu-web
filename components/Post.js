@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, Fragment, useCallback } from 'react'
+import { useEffect, useRef, useState, Fragment } from 'react'
 import {
     DotsHorizontalIcon,
     HeartIcon,
@@ -7,31 +7,27 @@ import {
     BookmarkIcon,
     EmojiHappyIcon,
 } from '@heroicons/react/outline'
-import {
-    HeartIcon as HeartIconFilled,
-    ChevronDownIcon
-} from '@heroicons/react/solid'
+import { HeartIcon as HeartIconFilled } from '@heroicons/react/solid'
 import { useSession } from 'next-auth/react'
 import {
     addDoc,
     collection,
     deleteDoc,
     doc,
-    getDoc,
     onSnapshot,
     orderBy,
     query,
     serverTimestamp,
-    setDoc,
-    where
+    setDoc
 } from '@firebase/firestore'
 import Moment from 'react-moment'
 import { db } from '../firebase'
 import { Menu, Transition } from '@headlessui/react'
 import { deleteObject, getStorage, ref } from '@firebase/storage'
-import dynamic from 'next/dynamic'
-import { ModalConfirmState, ModalConfirmButtonState } from '../atoms/modalAtom'
+import { ModalConfirmState, ModalConfirmButtonState, PostPageState } from '../atoms/modalAtom'
 import { useRecoilState } from 'recoil'
+import dynamic from 'next/dynamic'
+import router from 'next/router'
 const Picker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 function Post({ props }) {
@@ -42,8 +38,9 @@ function Post({ props }) {
     const [hasLiked, setHasLiked] = useState(false);
     const [openEmoji, setOpenEmoji] = useState(false);
     const [users, setUsers] = useState([]);
-    const [openDialogConfirm, setOpenDialogConfirm] = useRecoilState(ModalConfirmState);
-    const [confirmButton, setConfirmButton] = useRecoilState(ModalConfirmButtonState);
+    const [postPageData, setPostPageData] = useRecoilState(PostPageState);
+    // const [openDialogConfirm, setOpenDialogConfirm] = useRecoilState(ModalConfirmState);
+    // const [confirmButton, setConfirmButton] = useRecoilState(ModalConfirmButtonState);
     const commentRef = useRef(null);
 
     //Get comments by posts
@@ -78,6 +75,10 @@ function Post({ props }) {
     //Initialize liked by users
     useEffect(() => GetLikes(), [likes, users]);
 
+    useEffect(() => {
+        if (Object.keys(postPageData).length > 0) return router.push('/post/post-page');
+    }, [postPageData, router]);
+
     // useEffect(() => {
     //     if (confirmButton) DeletePost();
     // }, [db, props.id, confirmButton]);
@@ -92,7 +93,7 @@ function Post({ props }) {
                 likes.map((like, i) => {
                     users.map((user, i) => {
                         if (user.data().uid === like.data().uid) {
-                            html = `<img src="${user.data().userImage}" class="h-5 w-5 rounded-full" alt="user-image" crossOrigin="Anonymous"/>
+                            html = `<img src="${user.data().userImage}" class="h-5 w-5 rounded-full" alt="user-image" crossOrigin="anonymous"/>
                             <p class="pl-2">Liked by <strong>
                                    <a href="javascript:void(0);" class="no-underline">${like.data().username}</a></strong>
                             </p>`
@@ -110,11 +111,11 @@ function Post({ props }) {
                         if (like.data().uid === session?.user.uid) {
                             sessionIdx++;
                             countImages++;
-                            imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-10 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                            imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-10 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
                         }
                         if (user.data().uid === like.data().uid && like.data().uid !== session?.user.uid) {
                             countImages++
-                            if (countImages < 2) imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                            if (countImages < 2) imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
                         }
                         if (like.data().username === session?.user.username) {
                             html = '';
@@ -129,10 +130,10 @@ function Post({ props }) {
                     users.map((user) => {
                         if (user.data().uid === like.data().uid && like.data().uid !== session?.user.uid) {
                             if (i == 0) {
-                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-0 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
                             }
                             if (i == 1) {
-                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="Anonymous"/>`;
+                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
                             }
                         }
 
@@ -201,7 +202,7 @@ function Post({ props }) {
             if (likes.length > 0) await deleteDoc(doc(db, `posts/${props.id}/likes`, props.uid));
             //Delete comments 
             if (comments.length > 0) await deleteDoc(doc(db, `posts/${props.id}/comments`, props.uid));
-            
+
             // Create a reference to the file to delete
             const imageRef = ref(storage, `posts/${props.id}/image`);
 
@@ -216,6 +217,12 @@ function Post({ props }) {
         }).catch(error => {
             console.log('Deleted Post Failed: ', error.message);
         });
+    }
+
+    const LinkToPostPage = () => {
+        setPostPageData(props);
+        localStorage.setItem(`post-id`, props.id);        
+        localStorage.setItem(`post-${props.id}`, JSON.stringify(props));        
     }
 
     //Menu function of post
@@ -284,6 +291,7 @@ function Post({ props }) {
                     className="rounded-full h-12 w-12 object-cover border p-1 mr-3"
                     src={props.profileImg}
                     alt={`header-post-id-${props.id}`}
+                    crossOrigin="anonymous"
                 />
                 <p className="flex-1 font-bold">{props.username}</p>
                 <Menu as="div" className="relative">
@@ -318,8 +326,9 @@ function Post({ props }) {
                                     <Menu.Item>
                                         {({ active }) => (
                                             <button
-                                                className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'
-                                                    } group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                                type="button"
+                                                className={`${active ? 'bg-gray-100 text-black' : 'text-gray-900'} group flex rounded-md justify-center items-center w-full px-2 py-2 text-sm`}
+                                                onClick={LinkToPostPage}
                                             >
                                                 Go to post
                                             </button>
@@ -369,10 +378,10 @@ function Post({ props }) {
             </div>
             {/* Comments */}
             {comments.length > 0 && (
-                <div className="ml-10 h-20 overflow-y-scroll scrollbar-thumb-black scrollbar-thin">
+                <div className="ml-10 h-20 scrollbar-thumb-black scrollbar-thin scrollbar-hide">
                     {comments.map((comment, i) => (
                         <div key={comment.id} className="flex items-center space-x-2 mb-3">
-                            <img src={comment.data().userImage} className="h-7 rounded-full" alt="" />
+                            <img src={comment.data().userImage} className="h-7 rounded-full" alt="" crossOrigin="anonymous" />
                             <p className="text-sm flex-1">
                                 <span className="font-bold pr-2">{comment.data().username}</span>
                                 {comment.data().comment}

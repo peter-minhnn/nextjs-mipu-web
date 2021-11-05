@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 @import url("https://fonts.googleapis.com/css?family=Amatic+SC");
+@font-face {
+    font-family: "Dongle";
+    src: url("../public/fonts/Dongle/Dongle-Regular.ttf");
+    src: url("../public/fonts/Dongle/Dongle-Bold.ttf");
+    src: url("../public/fonts/Dongle/Dongle-Light.ttf");
+}
 
 @layer components {
     .nav-groups-button {
@@ -13,6 +19,10 @@
     .menu-icon-dropdown {
         @apply flex flex-row items-center truncate py-3 pl-4 hover:bg-gray-100 cursor-pointer z-[9999];
     }
+}
+
+body, html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 /* Handle */
 ::-webkit-scrollbar-thumb {
@@ -300,7 +310,7 @@
     min-width: 280px;
     max-width: 500px;
     height: inherit;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 10px;
     padding: 0;
     margin: 0;
@@ -308,7 +318,7 @@
     animation: fade 1s ease 1 forwards;
 }
 .confirm-bg-overlay {
-    background: rgba(0,0,0,.65);
+    background: rgba(0, 0, 0, 0.65);
 }
 .confirm h1 {
     text-align: center;
@@ -348,5 +358,47 @@
     background: #f8f6f6;
 }
 .confirm button:active {
-    background: #FFFFFF;
+    background: #ffffff;
+}
+
+.post-page__left {
+    border-left: #ccc;
+    border-width: 1px;
+    border-style: solid;
+    border-right: unset;
+    border-top: unset;
+    border-bottom: unset;
+}
+
+.post-page__bottom {
+    border-width: 1px;
+    border-style: solid;
+    border-right: unset;
+    border-bottom: unset;
+    border-left: none;
+}
+
+.post-page__left--header {
+    border-width: 1px;
+    border-style: solid;
+    border-top: none;
+    border-right: none;
+    border-left: none;
+}
+
+.post-page__comments {
+    max-height: calc(100% - 281px);
+}
+
+.post-page__comments--controls {
+    color: rgba(var(--f52,142,142,142),1);
+    font-size: 0.75rem;
+}
+
+.hover-dot-trigger .hover-dot-target {
+    display: none;
+}
+
+.hover-dot-trigger:hover .hover-dot-target {
+    display: block;
 }
