@@ -51,7 +51,7 @@ export default NextAuth({
         })
       }
       else {
-        await setDoc(doc(db, 'users', 'login'), {
+        await setDoc(doc(db, 'users', session?.user.uid), {
           email: session?.user?.email,
           username: session?.user?.username,
           userImage: session?.user?.image,

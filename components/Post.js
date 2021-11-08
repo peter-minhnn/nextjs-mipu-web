@@ -32,16 +32,11 @@ const Picker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 function Post({ props }) {
     const { data: session } = useSession();
-    const [comment, setComment] = useState('');
     const [comments, setComments] = useState([]);
     const [likes, setLikes] = useState([]);
     const [hasLiked, setHasLiked] = useState(false);
-    const [openEmoji, setOpenEmoji] = useState(false);
     const [users, setUsers] = useState([]);
     const [postPageData, setPostPageData] = useRecoilState(PostPageState);
-    // const [openDialogConfirm, setOpenDialogConfirm] = useRecoilState(ModalConfirmState);
-    // const [confirmButton, setConfirmButton] = useRecoilState(ModalConfirmButtonState);
-    const commentRef = useRef(null);
 
     //Get comments by posts
     useEffect(
@@ -50,7 +45,7 @@ function Post({ props }) {
                 onSnapshot(
                     query(
                         collection(db, 'posts', props.id, 'comments'),
-                        orderBy('timestamp', 'desc')
+                        orderBy('timestamp', 'asc')
                     ),
                     snapshot => {
                         setComments(snapshot.docs);
@@ -76,12 +71,8 @@ function Post({ props }) {
     useEffect(() => GetLikes(), [likes, users]);
 
     useEffect(() => {
-        if (Object.keys(postPageData).length > 0) return router.push('/post/post-page');
+        if (Object.keys(postPageData).length > 0) window.location.href = '/post/post-page';
     }, [postPageData, router]);
-
-    // useEffect(() => {
-    //     if (confirmButton) DeletePost();
-    // }, [db, props.id, confirmButton]);
 
     //Function get user's like
     const GetLikes = () => {
@@ -93,7 +84,7 @@ function Post({ props }) {
                 likes.map((like, i) => {
                     users.map((user, i) => {
                         if (user.data().uid === like.data().uid) {
-                            html = `<img src="${user.data().userImage}" class="h-5 w-5 rounded-full" alt="user-image" crossOrigin="anonymous"/>
+                            html = `<img src="${user.data().userImage}" class="h-5 w-5 rounded-full" alt="user-image" />
                             <p class="pl-2">Liked by <strong>
                                    <a href="javascript:void(0);" class="no-underline">${like.data().username}</a></strong>
                             </p>`
@@ -111,11 +102,11 @@ function Post({ props }) {
                         if (like.data().uid === session?.user.uid) {
                             sessionIdx++;
                             countImages++;
-                            imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-10 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
+                            imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-10 border border-white" alt="user-image" />`;
                         }
                         if (user.data().uid === like.data().uid && like.data().uid !== session?.user.uid) {
                             countImages++
-                            if (countImages < 2) imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
+                            if (countImages < 2) imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" />`;
                         }
                         if (like.data().username === session?.user.username) {
                             html = '';
@@ -130,10 +121,10 @@ function Post({ props }) {
                     users.map((user) => {
                         if (user.data().uid === like.data().uid && like.data().uid !== session?.user.uid) {
                             if (i == 0) {
-                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-0 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
+                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-0 z-0 border border-white" alt="user-image" />`;
                             }
                             if (i == 1) {
-                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" crossOrigin="anonymous"/>`;
+                                imageHtml += `<img src="${like.data().userImage}" class="h-6 w-6 rounded-full absolute left-[15px] z-0 border border-white" alt="user-image" />`;
                             }
                         }
 
@@ -171,28 +162,6 @@ function Post({ props }) {
         }
     }
 
-    //Save comment to firestore
-    const sendComment = async (e) => {
-        e.preventDefault();
-        const commentToSend = comment;
-        setComment('');
-
-        await addDoc(collection(db, 'posts', props.id, 'comments'), {
-            id: props.id,
-            comment: commentToSend,
-            username: session.user.username,
-            userImage: session.user.image,
-            timestamp: serverTimestamp()
-        })
-    }
-
-    //Open emoji comment
-    const OnEmojiClick = (event, emojiObject) => {
-        commentRef.current.value += emojiObject.emoji;
-        setComment(commentRef.current.value);
-        setOpenEmoji(false);
-    };
-
     // Delete post by user
     const DeletePost = async () => {
         await deleteDoc(doc(db, 'posts', props.id)).then(async res => {
@@ -221,8 +190,18 @@ function Post({ props }) {
 
     const LinkToPostPage = () => {
         setPostPageData(props);
-        localStorage.setItem(`post-id`, props.id);        
-        localStorage.setItem(`post-${props.id}`, JSON.stringify(props));        
+        let obj = {
+            caption: props.caption,
+            id: props.id,
+            image: props.image,
+            profileImg: props.profileImg,
+            uid: props.uid,
+            username: props.username,
+            timestamp: { it: props.timestamp }
+        }
+
+        localStorage.setItem(`post-id`, props.id);
+        localStorage.setItem(`post-${props.id}`, JSON.stringify(obj));
     }
 
     //Menu function of post
@@ -291,7 +270,7 @@ function Post({ props }) {
                     className="rounded-full h-12 w-12 object-cover border p-1 mr-3"
                     src={props.profileImg}
                     alt={`header-post-id-${props.id}`}
-                    crossOrigin="anonymous"
+
                 />
                 <p className="flex-1 font-bold">{props.username}</p>
                 <Menu as="div" className="relative">
@@ -357,7 +336,7 @@ function Post({ props }) {
                             <HeartIcon onClick={likePost} className="post-btn" />
                         )}
 
-                        <ChatIcon className="post-btn" />
+                        <ChatIcon className="post-btn" onClick={LinkToPostPage} />
                         <PaperAirplaneIcon className="post-btn" />
                     </div>
 
@@ -366,7 +345,7 @@ function Post({ props }) {
             )}
 
             {/* Caption */}
-            <div className="p-5 truncate">
+            <div className="pl-5 pt-5 pb-2 truncate">
                 {likes.length > 0 && (
                     <div className="flex flex-row items-center pb-2 relative">
                         <div id={`image-list_${props.id}`} className="flex items-center flex-row-reverse"></div>
@@ -375,22 +354,31 @@ function Post({ props }) {
                 )}
                 <span className="font-bold mr-1">{props.username}</span>
                 {props.caption}
+                {comments.length > 2 && (
+                    <div className="flex items-center pt-2">
+                        <span className="text-sm font-medium text-gray-400 cursor-pointer" onClick={LinkToPostPage}>View all {comments.length} comments</span>
+                    </div>
+                )}
             </div>
             {/* Comments */}
             {comments.length > 0 && (
-                <div className="ml-10 h-20 scrollbar-thumb-black scrollbar-thin scrollbar-hide">
-                    {comments.map((comment, i) => (
-                        <div key={comment.id} className="flex items-center space-x-2 mb-3">
-                            <img src={comment.data().userImage} className="h-7 rounded-full" alt="" crossOrigin="anonymous" />
-                            <p className="text-sm flex-1">
-                                <span className="font-bold pr-2">{comment.data().username}</span>
-                                {comment.data().comment}
-                            </p>
-                            <Moment fromNow className="pr-5 text-xs">
-                                {comment.data().timestamp?.toDate()}
-                            </Moment>
-                        </div>
-                    ))}
+                <div className="ml-5 h-20 scrollbar-thumb-black scrollbar-thin scrollbar-hide">
+                    {comments.map((comment, i) => {
+                        if (i <= 1) {
+                            return (
+                                <div key={comment.id} className="flex items-center space-x-2 mb-3">
+                                    {/* <img src={comment.data().userImage} className="h-7 rounded-full" alt="" /> */}
+                                    <p className="text-sm flex-1">
+                                        <span className="font-bold pr-2">{comment.data().username}</span>
+                                        {comment.data().comment}
+                                    </p>
+                                    <Moment fromNow className="pr-5 text-xs">
+                                        {comment.data().timestamp?.toDate()}
+                                    </Moment>
+                                </div>
+                            )
+                        }
+                    })}
                 </div>
             )}
 
@@ -400,38 +388,6 @@ function Post({ props }) {
                     {props.timestamp?.toDate()}
                 </Moment>
             </div>
-
-            {/* Input Box */}
-            {session && (
-                <form className="relative flex items-center p-4">
-                    <div className={`${(!openEmoji && `hidden`)} absolute -top-80 z-20 select-none`}>
-                        <Picker
-                            onEmojiClick={OnEmojiClick}
-                            disableAutoFocus={true}
-                            groupNames={{ smileys_people: "PEOPLE" }}
-                            native
-                        />
-                    </div>
-                    <EmojiHappyIcon className="h-7 cursor-pointer hover:scale-110" onClick={() => setOpenEmoji(openEmoji ? false : true)} />
-                    <input
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        type="text"
-                        placeholder="Add a comment..."
-                        className="border-none flex-1 focus:ring-0 outline-none"
-                        ref={commentRef}
-                        onFocus={() => setOpenEmoji(false)}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!comment}
-                        onClick={sendComment}
-                        className="font-semibold text-blue-400"
-                    >
-                        Post
-                    </button>
-                </form>
-            )}
         </div>
     )
 }

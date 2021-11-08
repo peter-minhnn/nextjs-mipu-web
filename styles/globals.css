@@ -19,6 +19,9 @@
     .menu-icon-dropdown {
         @apply flex flex-row items-center truncate py-3 pl-4 hover:bg-gray-100 cursor-pointer z-[9999];
     }
+    .like-comment-heart {
+        @apply w-7 h-4 pr-3 hover:scale-125 cursor-pointer transition-all duration-150 ease-out select-none;
+    }
 }
 
 body, html {
@@ -386,8 +389,16 @@ body, html {
     border-left: none;
 }
 
+.post-page__comments--input {
+    border-width: 1px;
+    border-style: solid;
+    border-right: none;
+    border-left: none;
+    border-bottom: none;
+}
+
 .post-page__comments {
-    max-height: calc(100% - 281px);
+    max-height: calc(100% - 235px);
 }
 
 .post-page__comments--controls {

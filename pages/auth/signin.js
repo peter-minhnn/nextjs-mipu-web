@@ -29,7 +29,7 @@ function signIn({ providers }) {
         const docRef = doc(db, "tokens", 'login');
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            console.log("Document data:", docSnap.data());
+            // console.log("Document data:", docSnap.data());
             if (docSnap.data().token && !isLoggedIn) {
                 setIsLoggedIn(true);
                 localStorage.removeItem('switch-accounts');

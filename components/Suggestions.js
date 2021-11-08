@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc } from '@firebase/firestore';
+import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, deleteDoc } from '@firebase/firestore';
 import { useSession } from 'next-auth/react';
 import React, { useEffect, useState } from 'react'
 import { db } from '../firebase'
@@ -6,15 +6,65 @@ import { db } from '../firebase'
 function Suggestions() {
     const { data: session } = useSession();
     const [suggestions, setSuggestions] = useState([]);
+    const [usersFollowing, setUsersFollowing] = useState([]);
+    const [isFollowing, setIsFollowing] = useState(false);
+
+    useEffect(() => UpdateUsers(), []);
 
     useEffect(() => {
-        return UpdateUsers();
-    }, []);
+        onSnapshot(collection(db, 'users', session.user?.uid, 'usersFollowing'), snapshot => {
+            setUsersFollowing(snapshot.docs);
+        });
+    }, [suggestions]);
+
+    useEffect(() => {
+        const CheckUserHasFollowed = () => {
+            if (usersFollowing.length > 0) {
+                var newSuggestions = [];
+                suggestions.filter(userSuggestion => {
+                    usersFollowing.filter(x => {
+                        if (userSuggestion.data().uid != x.data().uid) {
+                            newSuggestions.push(userSuggestion);
+                        }
+                    })
+                });
+                if (newSuggestions.length > 0)  setSuggestions(newSuggestions);
+            }
+        }
+        CheckUserHasFollowed();
+        return () => CheckUserHasFollowed();
+    }, [usersFollowing]);
 
     const UpdateUsers = async () => {
         onSnapshot(query(collection(db, 'users'), orderBy('timestamp', 'desc')), snapshot => {
             setSuggestions(snapshot.docs);
         });
+    }
+
+    const AddFollow = async (profile, index) => {
+        setIsFollowing(true);
+        document.getElementById(`follow-id-${index}`).innerHTML = 'Following';
+        if (suggestions && suggestions.length > 0) {
+            suggestions.filter(async user => {
+                if (user.data().uid == profile.uid) {
+                    await setDoc(
+                        doc(
+                            db,
+                            'users',
+                            session?.user?.uid,
+                            'usersFollowing',
+                            session?.user?.uid
+                        ),
+                        {
+                            username: user.data().username,
+                            uid: user.data().uid,
+                            createdDate: serverTimestamp(),
+                            status: 'following'
+                        }
+                    );
+                }
+            });
+        }
     }
 
     return (
@@ -24,7 +74,7 @@ function Suggestions() {
                 <button className="text-gray-600 font-semibold">See All</button>
             </div>
             {suggestions.map((profile, i) => {
-                if (i <= 5 && profile.data().uid != session?.user?.uid) {
+                if (i <= 4 && profile.data().uid != session?.user?.uid) {
                     return (
                         <div key={i} className="flex items-center justify-between mt-3">
                             <img
@@ -38,7 +88,9 @@ function Suggestions() {
                                 <h3 className="text-xs text-gray-400">People you may know</h3>
                             </div>
 
-                            <button className="text-blue-400 text-sm">Follow</button>
+                            <button className="text-blue-400 text-sm" id={`follow-id-${i}`} onClick={() => AddFollow(profile.data(), i)}>
+                                Follow
+                            </button>
                         </div>
                     )
                 }
